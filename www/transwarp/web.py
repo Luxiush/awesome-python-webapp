@@ -463,6 +463,7 @@ def get(path):
     def _decorator(func):
         func.__web_route__ = path
         func.__web_method__ = 'GET'
+        logging.info('get %s, return %s.' %(path, func.__name__))
         return func
     return _decorator
 
@@ -1278,7 +1279,7 @@ def view(path):
         def _wrapper(*args, **kw):
             r = func(*args, **kw)
             if isinstance(r, dict):
-                logging.info('return Template')
+                logging.info('return Template, %s' %path)
                 return Template(path, **r)
             raise ValueError('Expect return a dict when using @view() decorator.')
         return _wrapper
@@ -1455,6 +1456,7 @@ class WSGIApplication(object):
     def run(self, port=9000, host='127.0.0.1'):
         from wsgiref.simple_server import make_server
         logging.info('application (%s) will start at %s:%s...' % (self._document_root, host, port))
+        logging.info('-----------------------------------')
         server = make_server(host, port, self.get_wsgi_application(debug=True))
         server.serve_forever()
 

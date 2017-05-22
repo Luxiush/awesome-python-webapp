@@ -275,6 +275,16 @@ class Model(dict):
         '''
         return db.select_int('select count(`%s`) from `%s` %s' % (cls.__primary_key__.name, cls.__table__, where), *args)
 
+
+    @classmethod
+    def select(cls, sql, *args):
+        L = db.select(sql, *args)
+        return [cls(**d) for d in L]
+    @classmethod
+    def update(cls, sql, *args):
+        return db.update(sql, *args)
+
+
     def update(self):
         self.pre_update and self.pre_update()
         L = []

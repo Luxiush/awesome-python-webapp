@@ -11,9 +11,9 @@ configs = {
     'db': {
         'host': '127.0.0.1',
         'port': 3306,
-        'user': 'www-data',
-        'password': 'www-data',
-        'database': 'awesome'
+        'user': 'root',
+        'password': '14353222',
+        'database': 'test'
     },
     'session': {
         'secret': 'AwEsOmE'

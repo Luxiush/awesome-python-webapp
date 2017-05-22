@@ -451,7 +451,7 @@ def insert(table, **kw):
     return _update(sql, *args)
 
 def update(sql, *args):
-    r'''
+    '''
     Execute update SQL.
 
     >>> u1 = dict(id=1000, name='Michael', email='michael@test.org', passwd='123456', last_modified=time.time())
@@ -473,6 +473,8 @@ def update(sql, *args):
     0
     '''
     return _update(sql, *args)
+
+
 
 if __name__=='__main__':
     logging.basicConfig(level=logging.DEBUG)
