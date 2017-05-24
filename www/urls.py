@@ -3,9 +3,11 @@
 
 # 实现URL的处理函数
 
-__author__ = 'Michael Liao'
+__author__ = 'Xiushun Lu'
 
 import os, re, time, base64, hashlib, logging
+
+import markdown2
 
 from transwarp.web import get, post, ctx, view, interceptor, seeother, notfound
 
@@ -61,6 +63,21 @@ def check_admin():
 	raise APIPermissionError('No Permission.')
 
 
+def _get_page_index():
+	page_index = 1
+	try:
+		page_index = int(ctx.request.get('page', '1'))
+	except ValueError:
+		pass 
+	return page_index
+
+def _get_blogs_by_page():
+	total = Blog.count_all();
+	page = Page(total, _get_page_index())
+	blogs = Blog.find_by('order by created_at desc limit ?,?', page.offset, page.limit)
+	return blogs, page 
+
+
 #----------- interceptor -----------------#
 
 @interceptor('/')
@@ -90,11 +107,7 @@ def manage_interceptor(next):
 
 #---------------- view --------------------#	
 
-@view('blogs.html')
-@get('/')
-def index():
-	blogs = Blog.find_all()
-	return dict(blogs=blogs, user=ctx.request.user)
+##---------------- users
 
 @view('signin.html')
 @get('/signin')
@@ -111,6 +124,26 @@ def signout():
 def register():
 	return dict()
 
+##---------------- blogs
+
+@view('index.html')
+@get('/')
+def index():
+	blogs = Blog.find_all()
+	return dict(blogs=blogs, user=ctx.request.user)
+
+@view('blog.html')
+@get('/blog/:blog_id')
+def detail(blog_id):
+	blog = Blog.get(blog_id)
+	if blog is None:
+		raise notfound()
+	blog.html_content = markdown2.markdown(blog.content)
+	comments = Comment.find_by('where blog_id=? order by created_at desc limit 100', blog_id)
+	return dict(blog=blog, comments=comments, user=ctx.request.user)
+
+##---------------- manage
+
 @view('manage_blog_edit.html')
 @get('/manage/blogs/create')
 def manage_blogs_create():
@@ -122,7 +155,10 @@ def manage_blogs():
 	return dict(page_index=_get_page_index(), user=ctx.request.user)
 
 
+
 #---------------- api -----------------------#
+
+##---------------- users
 
 @api 
 @get('/api/users')
@@ -131,7 +167,6 @@ def api_get_users():
 	for u in users:
 		u.password = '******'
 	return dict(users=users)
-
 
 @api
 @post('/api/users')
@@ -184,6 +219,8 @@ def authenticate():
 	user.password = '******'
 	return user 
 
+##---------------- blogs
+
 @api 
 @post('/api/blogs') 
 def api_create_blogs():
@@ -206,24 +243,12 @@ def api_create_blogs():
 	blog.insert()
 	return blog 
 
-
-def _get_page_index():
-	page_index = 1
-	try:
-		page_index = int(ctx.request.get('page', '1'))
-	except ValueError:
-		pass 
-	return page_index
-
-def _get_blogs_by_page():
-	total = Blog.count_all();
-	page = Page(total, _get_page_index())
-	blogs = Blog.find_by('order by created_at desc limit ?,?', page.offset, page.limit)
-	return blogs, page 
-
 @api 
 @get('/api/blogs')
 def api_get_blogs():
+	'''
+	分页浏览
+	'''
 	format = ctx.request.get('format', '')
 	blogs, page = _get_blogs_by_page()
 	if format=='html':
@@ -231,5 +256,71 @@ def api_get_blogs():
 			blog.content = markdown2.markdown(blog.content)
 	return dict(blogs=blogs, page=page)
 
+@api 
+@get('/api/blogs/:blog_id')
+def api_get_blog(blog_id):
+	blog = Blog.get(blog_id)
+	if blog:
+		return blog 
+	raise APIResourceNotFoundError('Blog')
+
+
+@api 
+@post('/api/blogs/:blog_id/delete')
+def api_delete_blog(blog_id):
+	check_admin()
+	blog = Blog.get(blog_id)
+	if blog is None:
+		raise APIResourceNotFoundError('Blog')
+ 	blog.delete()
+ 	return dict(id=blog_id)
+
+##---------------- comments
+
+@api 
+@get('/api/comments')
+def api_get_comments():
+	'''
+	获取评论
+	'''
+	blog_id = ctx.request.get('blog_id','').strip()
+	if blog_id:
+		comments = Comment.select('select * from comments where blog_id=? order by created_at desc', blog_id)
+		return dict(blog_id=blog_id, comments=comments)
+	raise APIValueError('blog_id', 'blog_id cannot be empty')
+
+
+@api 
+@post('/api/blogs/:blog_id/comments')
+def api_create_comment(blog_id):
+	'''
+	创建评论
+	'''
+	i = ctx.request.input(content='')
+	content = i.content.strip()
+	if not content:
+		raise APIValueError('content', 'content cannot be empty')
+	user = ctx.request.user
+	comment = Comment(blog_id=blog_id, user_id=user.id, user_name=user.name, user_image=user.image, content=content)
+	comment.insert()
+	return comment 
+
+@api 
+@post('/api/comments/:comment_id/delete')
+def api_delete_comment(comment_id):
+	'''
+	删除评论
+	'''
+	user = ctx.request.user
+	if not user:
+		raise APIPermissionError('Permission denied.')
+	comment = Comment.get(comment_id)
+	if comment is None:
+		raise APIResourceNotFoundError('Comment')
+	if comment.user_id != user.id and user.admin==False:
+		raise APIPermissionError('Permission denied.')
+
+	comment.delete()
+	return dict(comment_id=comment_id)
 
 
