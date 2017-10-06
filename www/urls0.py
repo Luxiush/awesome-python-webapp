@@ -56,6 +56,7 @@ def parse_signed_cookie(cookie_str):
 		logging.info('unknown exception.')
 		return None
 '''
+
 def check_admin():
 	user = ctx.request.user
 	if user and user.admin:
@@ -114,7 +115,7 @@ def manage_interceptor(next):
 def signin():
 	return dict()
 
-@view('/signout')
+@get('/signout')
 def signout():
 	ctx.response.delete_cookie(_COOKIE_NAME)
 	raise seeother('/')
@@ -142,6 +143,12 @@ def detail(blog_id):
 	comments = Comment.find_by('where blog_id=? order by created_at desc limit 100', blog_id)
 	return dict(blog=blog, comments=comments, user=ctx.request.user)
 
+@view('manage_blog_edit.html')
+@get('/blogs/create')
+def blogs_create():
+	return dict(id=None, action='/api/blogs', redirect='/', user=ctx.request.user)
+
+
 ##---------------- manage
 
 @view('manage_blog_edit.html')
@@ -150,7 +157,7 @@ def manage_blogs_create():
 	return dict(id=None, action='/api/blogs', redirect='/manage/blogs', user=ctx.request.user)
 
 @view('manage_blog_list.html')
-@get('/manage/blogs')
+@get('/manage/')
 def manage_blogs():
 	return dict(page_index=_get_page_index(), user=ctx.request.user)
 
@@ -227,7 +234,6 @@ def api_create_blogs():
 	'''
 	创建blog
 	'''
-	check_admin();
 	i = ctx.request.input(name='',summary='',content='')
 	name = i.name.strip()
 	summary = i.summary.strip()

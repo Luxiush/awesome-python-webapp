@@ -18,6 +18,8 @@ from transwarp.web import WSGIApplication, Jinja2TemplateEngine
 from config import configs
 
 import urls
+# import urls0 as urls
+
 
 
 def datetime_filter(t):
@@ -50,7 +52,14 @@ wsgi.add_interceptor(urls.user_interceptor)
 wsgi.add_interceptor(urls.manage_interceptor)
 
 logging.info('Adding modules...')
-wsgi.add_module(urls)
+wsgi.add_module(urls.utils)
+wsgi.add_module(urls.api)
+wsgi.add_module(urls.view)
+
 
 if __name__ == '__main__':
-    wsgi.run(9000, host='0.0.0.0')
+    wsgi.run()
+else:
+    logging.info('application will start at 127.0.0.1:9000...')
+    logging.info('-----------------------------------')
+    application = wsgi.get_wsgi_application()

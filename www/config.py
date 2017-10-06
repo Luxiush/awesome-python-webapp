@@ -7,6 +7,10 @@ Configuration
 
 __author__ = 'Michael Liao'
 
+# _CONFIG_OVERRIDE = True   # on service
+_CONFIG_OVERRIDE = False    # local
+
+
 import config_default
 
 class Dict(dict):
@@ -47,10 +51,11 @@ def toDict(d):
 
 configs = config_default.configs
 
-try:
-    import config_override
-    configs = merge(configs, config_override.configs)
-except ImportError:
-    pass
+if _CONFIG_OVERRIDE:
+    try:
+        import config_override
+        configs = merge(configs, config_override.configs)
+    except ImportError:
+        pass
 
 configs = toDict(configs)

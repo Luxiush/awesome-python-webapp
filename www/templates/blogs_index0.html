@@ -1,0 +1,103 @@
+{% extends '__base__.html' %}
+
+{% block title %}日志{% endblock %}
+
+{% block beforehead %}
+
+<script>
+function initVM(data) {
+    $('#div-blogs').show();
+    var vm = new Vue({
+        el: '#div-blogs',
+        data: {
+            blogs: data.blogs,
+            page: data.page
+        },
+        methods: {
+            previous: function () {
+                if(this.page.has_previous){
+                    this.page.page_index -= 1;
+                }
+                getApi('/api/blogs?page='+this.page.page_index, function(err, results){
+                    if (err) {
+                        return showError(err);
+                    }
+                    this.page = results.page;
+                    this.blogs = results.blogs;
+                });
+            },
+            next: function () {
+                if(this.page.has_next){
+                    this.page.page_index += 1;
+                }
+                getApi('/api/blogs?page='+this.page.page_index, function(err, results){
+                    if (err) {
+                        return showError(err);
+                    }
+                    this.page = results.page;
+                    this.blogs = results.blogs;
+                });
+            },
+        }
+    });
+}
+$(function() {
+    getApi('/api/blogs', function (err, results) {
+        if (err) {
+            return showError(err);
+        }
+        $('#div-loading').hide();
+        initVM(results);
+    });
+});
+</script>
+
+{% endblock %}
+
+{% block content %}
+
+    <div id = "div-blogs" class="uk-width-medium-3-4" style="display:none">
+        {% if user %}
+            <a href="/blog/new" class="uk-button uk-button-primary"><i class="uk-icon-plus"></i> 创建日志</a>
+        {% else %}
+            <i class="uk-icon-plus"></i> 创建日志
+        {% endif %}
+        <div v-repeat="blog:blogs">
+            <article class="uk-article">
+                <h2><a target="_blank" v-attr="href: '/blog/'+blog.id" v-text="blog.name"></a></h2>
+                <p class="uk-article-meta" v-text="'发表于'+blog.created_at.toDateTime()"></p>
+                <p v-text="blog.summary"></p>
+                <p><a v-attr="href: '/blog/'+blog.id">继续阅读 <i class="uk-icon-angle-double-right"></i></a></p>
+            </article>
+            <hr class="uk-article-divider">
+        </div>
+        <div class="uk-width-1-1 uk-text-center">
+            <ul class="uk-pagination">
+                <li v-if="! page.has_previous" class="uk-disabled"><span><i class="uk-icon-angle-double-left"></i></span></li>
+                <li v-if="page.has_previous"><a v-on="click: previous()" ><i class="uk-icon-angle-double-left"></i></a></li>
+
+                <li class="uk-active"><span v-text="page.page_index"></span></li>
+
+                <li v-if="! page.has_next" class="uk-disabled"><span><i class="uk-icon-angle-double-right"></i></span></li>
+                <li v-if="page.has_next"><a v-on="click: next()"><i class="uk-icon-angle-double-right"></i></a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="uk-width-medium-1-4">
+        <div class="uk-panel uk-panel-header">
+            <h3 class="uk-panel-title">友情链接</h3>
+            <ul class="uk-list uk-list-line">
+                <li><i class="uk-icon-thumbs-o-up"></i> <a target="_blank" href="http://www.liaoxuefeng.com/category/0013738748415562fee26e070fa4664ad926c8e30146c67000">编程</a></li>
+                <li><i class="uk-icon-thumbs-o-up"></i> <a target="_blank" href="http://www.liaoxuefeng.com/category/0013738748248885ddf38d8cd1b4803aa74bcda32f853fd000">读书</a></li>
+                <li><i class="uk-icon-thumbs-o-up"></i> <a target="_blank" href="http://www.liaoxuefeng.com/wiki/001374738125095c955c1e6d8bb493182103fac9270762a000">Python教程</a></li>
+                <li><i class="uk-icon-thumbs-o-up"></i> <a target="_blank" href="http://www.liaoxuefeng.com/wiki/0013739516305929606dd18361248578c67b8067c8c017b000">Git教程</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="div-loading" class="uk-width-1-1 uk-text-center">
+        <span><i class="uk-icon-spinner uk-icon-medium uk-icon-spin"></i> 正在加载...</span>
+    </div>
+
+{% endblock %}

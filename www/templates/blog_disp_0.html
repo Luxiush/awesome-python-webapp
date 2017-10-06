@@ -1,0 +1,142 @@
+{% extends '__base__.html' %}
+
+{% block title %} 博客详情 {% endblock %}
+
+{% block beforehead %}
+<script>
+
+var get_blog_url    = '/api/blog/{{ blog_id }}';
+var get_comment_url = '/api/comments/{{ blog_id }}';
+var post_comment_url = '/api/comments/{{ blog_id }}';
+
+function initBlog(data) {
+    $('#div-blogs').show();
+    var vm = new Vue({
+        el: '#div-blogs',
+        data: {
+            blog: data.blog
+        },
+    });
+}
+
+function initComment(data) {
+    $('#comment-list').show();
+    var vm = new Vue({
+        el: '#comment-list',
+        data: {
+            comments: data.comments
+        },
+    });
+}
+
+$(function () {
+    getApi(get_blog_url, function (err, results) {
+        if (err) {
+            return showError(err);
+        }
+        // $('#div-loading').hide();
+        initBlog(results);
+    });
+
+
+    getApi(get_comment_url, function (err, results) {
+        if (err) {
+            return showError(err);
+        }
+        // $('#div-loading').hide();
+        initComment(results);
+    });
+
+
+    $('#form-comment').submit(function (e) {
+        e.preventDefault();
+        showError();
+        var content = $('#form-comment textarea').val().trim();
+        if (content==='') {
+            return showError('请输入评论内容！');
+        }
+        startLoading();
+        postApi(post_comment_url, {content: content}, function (err, result) {
+            if (err) {
+                showError(err);
+                stopLoading();
+                return;
+            }
+            location.reload();
+        });
+    });
+});
+
+</script>
+{% endblock %}
+
+{% block content %}
+
+<div class="uk-width-medium-3-4">
+	<!-- blog详情 -->
+	<article id = "div-blogs" class="uk-article">
+		<h2 v-text="blog.name"></h2>
+        <p class="uk-article-meta" v-text="'发表于'+blog.created_at.toDateTime()"></p>
+		<div v-text="blog.content"></div>
+	</article>
+	<hr class="uk-article-divider">
+
+    {% if user %}
+    <!-- 发表评论 -->
+    <h3>发表评论</h3>
+    <article class="uk-comment">
+        <header class="uk-comment-header">
+            <img class="uk-comment-avatar uk-border-circle" width="50" height="50" src="{{user.image}}">
+            <h4 class="uk-comment-title"> {{user.name}} </h4>
+        </header>
+        <div class="uk-comment-body">
+            <form id="form-comment" class="uk-form">  
+                <div class="uk-alert uk-alert-danger uk-hidden"></div>
+                <div class="uk-form-row">
+                    <textarea rows="6" placeholder="说点什么吧" style="width:100%;resize:none;"></textarea>
+                </div>
+                <div class="uk-form-row">
+                    <button type="submit" class="uk-button uk-button-primary">
+                        <i class="uk-icon-comment"></i> 发表评论
+                    </button>
+                </div>
+            </form>
+        </div>
+    </article>
+    <hr class="uk-article-divider">
+    {% endif %}
+
+	<!-- 最新评论 -->
+	<h3>最新评论</h3>
+	<ul id="comment-list" class="uk-comment-list">
+		<li v-repeat="comment:comments">
+			<article class="uk-comment">
+				<header class="uk-comment-header">
+					<img class="uk-comment-avatar uk-border-circle" width="50" height="50" v-attr="src: comment.user_image">
+					<h4 class="uk-comment-title" v-text="comment.user_name">					</h4>
+					<p v-text="comment.content"></p>
+				</header>				
+			</article>
+		</li>
+	</ul>
+</div>
+
+<div class="uk-width-medium-1-4">
+    <div class="uk-panel uk-panel-box">
+        <div id = "div-blogs" class="uk-text-center">
+            <img class="uk-border-circle" width="120" height="120" 
+            v-attr="src: blog.user_image">
+            <h3 v-text="blog.user_name"></h3>
+        </div>
+    </div>
+    <div class="uk-panel uk-panel-header">
+        <h3 class="uk-panel-title">友情链接</h3>
+        <ul class="uk-list uk-list-line">
+            <li><i class="uk-icon-link"></i> <a href="#">编程</a></li>
+            <li><i class="uk-icon-link"></i> <a href="#">思考</a></li>
+            <li><i class="uk-icon-link"></i> <a href="#">读书</a></li>
+        </ul>
+    </div>
+</div>
+
+{% endblock %}

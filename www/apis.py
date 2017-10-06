@@ -40,7 +40,7 @@ class Page(object):
 	'''
 	存储分页信息, 用于分页显示blog
 	'''
-	def __init__(self, item_count, page_index=1, page_size=10):
+	def __init__(self, item_count, page_index=1, page_size=8):
 		self.item_count = item_count #总的记录数
 		self.page_size = page_size   #每页的记录数
 		self.page_count = item_count // page_size + (1 if item_count%page_size>0 else 0) #总页数

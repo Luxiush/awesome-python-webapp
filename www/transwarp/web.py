@@ -7,6 +7,8 @@ A simple, lightweight, WSGI-compatible web framework.
 
 __author__ = 'Michael Liao'
 
+import json
+
 import types, os, re, cgi, sys, time, datetime, functools, mimetypes, threading, logging, urllib, traceback
 
 try:
@@ -72,7 +74,7 @@ _RE_TZ = re.compile('^([\+\-])([0-9]{1,2})\:([0-9]{1,2})$')
 
 class UTC(datetime.tzinfo):
     '''
-    A UTC tzinfo object. 
+    A UTC tzinfo object.
 
     >>> tz0 = UTC('+00:00')
     >>> tz0.tzname(None)
@@ -463,7 +465,7 @@ def get(path):
     def _decorator(func):
         func.__web_route__ = path
         func.__web_method__ = 'GET'
-        logging.info('get %s, return %s.' %(path, func.__name__))
+        # logging.info('get %s, return %s.' %(path, func.__name__))
         return func
     return _decorator
 
@@ -613,8 +615,14 @@ class Request(object):
                 return MultipartFile(item)
             return _to_unicode(item.value)
         fs = cgi.FieldStorage(fp=self._environ['wsgi.input'], environ=self._environ, keep_blank_values=True)
+
+        # logging.info("---------type of fs: %s" % fs)
+
+        # for k, v in self._environ.iteritems():
+        #     print "_environ[%s]:%s\n" % (k, v)
+
         inputs = dict()
-        for key in fs:
+        for key in fs.keys():
             inputs[key] = _convert(fs[key])
         return inputs
 
@@ -856,7 +864,7 @@ class Request(object):
 
     def header(self, header, default=None):
         '''
-        Get header from request as unicode, return None if not exist, or default if specified. 
+        Get header from request as unicode, return None if not exist, or default if specified.
         The header name is case-insensitive such as 'USER-AGENT' or u'content-Type'.
 
         >>> r = Request({'HTTP_USER_AGENT': 'Mozilla/5.0', 'HTTP_ACCEPT': 'text/html'})
@@ -1056,12 +1064,12 @@ class Response(object):
           name: the cookie name.
           value: the cookie value.
           max_age: optional, seconds of cookie's max age.
-          expires: optional, unix timestamp, datetime or date object that indicate an absolute time of the 
+          expires: optional, unix timestamp, datetime or date object that indicate an absolute time of the
                    expiration time of cookie. Note that if expires specified, the max_age will be ignored.
           path: the cookie path, default to '/'.
           domain: the cookie domain, default to None.
           secure: if the cookie secure, default to False.
-          http_only: if the cookie is for http only, default to True for better safty 
+          http_only: if the cookie is for http only, default to True for better safty
                      (client-side script cannot access cookies with HttpOnly flag).
 
         >>> r = Response()
@@ -1428,10 +1436,12 @@ class WSGIApplication(object):
         self._check_not_running()
         m = mod if type(mod)==types.ModuleType else _load_module(mod)
         logging.info('Add module: %s' % m.__name__)
+
         for name in dir(m):
             fn = getattr(m, name)
             if callable(fn) and hasattr(fn, '__web_route__') and hasattr(fn, '__web_method__'):
                 self.add_url(fn)
+
 
     def add_url(self, func):
         self._check_not_running()
