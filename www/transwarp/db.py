@@ -107,6 +107,7 @@ class _LasyConnection(object):
 class _DbCtx(threading.local):
     '''
     Thread local object that holds connection info.
+    一个已经打开的数据库连接
     '''
     def __init__(self):
         self.connection = None
@@ -136,6 +137,7 @@ _db_ctx = _DbCtx()
 # global engine object:
 engine = None
 
+# engine在这里可以看做一个已经配置好的闭包, 或者说是一个还没打开的数据库连接
 class _Engine(object):
 
     def __init__(self, connect):
@@ -161,7 +163,7 @@ def create_engine(user, password, database, host='127.0.0.1', port=3306, **kw):
 
 class _ConnectionCtx(object):
     '''
-    _ConnectionCtx object that can open and close connection context. _ConnectionCtx object can be nested and only the most 
+    _ConnectionCtx object that can open and close connection context. _ConnectionCtx object can be nested and only the most
     outer connection has effect.
 
     with connection():
@@ -337,7 +339,7 @@ def _select(sql, first, *args):
 @with_connection
 def select_one(sql, *args):
     '''
-    Execute select SQL and expected one result. 
+    Execute select SQL and expected one result.
     If no result found, return None.
     If multiple results found, the first one returned.
 
@@ -360,7 +362,7 @@ def select_one(sql, *args):
 @with_connection
 def select_int(sql, *args):
     '''
-    Execute select SQL and expected one int and only one int result. 
+    Execute select SQL and expected one int and only one int result.
 
     >>> n = update('delete from user')
     >>> u1 = dict(id=96900, name='Ada', email='ada@test.org', passwd='A-12345', last_modified=time.time())

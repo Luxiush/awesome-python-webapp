@@ -1321,6 +1321,7 @@ def interceptor(pattern='/'):
 def _build_interceptor_fn(func, next):
     def _wrapper():
         if func.__interceptor__(ctx.request.path_info):
+            # 满足拦截条件
             return func(next)
         else:
             return next()
@@ -1329,6 +1330,8 @@ def _build_interceptor_fn(func, next):
 def _build_interceptor_chain(last_fn, *interceptors):
     '''
     Build interceptor chain.
+    last_fn:        last function, 最后需要执行的函数
+    interceptors:   拦截器, 在执行函数之前需要做的检查
 
     >>> def target():
     ...     print 'target'
@@ -1413,9 +1416,18 @@ class WSGIApplication(object):
         self._interceptors = []
         self._template_engine = None
 
+        '''
+        静态链接表: {
+            path_info1: function1
+            path_info2: function2
+        }
+        '''
         self._get_static = {}
         self._post_static = {}
 
+        '''
+        动态链接表, 调用时通过正则进行匹配同时提取出path_info中的参数
+        '''
         self._get_dynamic = []
         self._post_dynamic = []
 
@@ -1479,6 +1491,9 @@ class WSGIApplication(object):
         _application = Dict(document_root=self._document_root)
 
         def fn_route():
+            '''
+            路由, 根据不同的path_info调用不同的函数
+            '''
             request_method = ctx.request.request_method
             path_info = ctx.request.path_info
             if request_method=='GET':
@@ -1501,6 +1516,8 @@ class WSGIApplication(object):
                 raise notfound()
             raise badrequest()
 
+        # 构建拦截链, 每次客户端请求时都要先通过所有拦截的器验证,
+        # 才能执行具体的函数.
         fn_exec = _build_interceptor_chain(fn_route, *self._interceptors)
 
         def wsgi(env, start_response):
